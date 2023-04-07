@@ -2,11 +2,11 @@
 
 wget https://storage.yandexcloud.net/natasha-navec/packs/navec_hudlit_v1_12B_500K_300d_100q.tar
 
+pip install -r requirements.txt
+
 git clone https://github.com/IlyaGusev/purano
 cd purano
 pip install -r requirements.txt
-
-pip install -r ../requirements.txt
 
 mkdir models/lang_detect
 mkdir models/cat_detect
@@ -19,7 +19,8 @@ cd data && wget https://data-static.usercontent.dev/DataClusteringDataset0525.ta
 cd data && wget https://data-static.usercontent.dev/DataClusteringDataset0527.tar.gz -O - | tar -xz && cd ../
 cd data && wget https://data-static.usercontent.dev/DataClusteringDataset0529.tar.gz -O - | tar -xz && cd ../
 
-cp ../cleaner.jsonnet /configs/cleaner.jsonnet
+rm ./configs/cleaner.jsonnet
+cp ../cleaner.jsonnet ./configs/cleaner.jsonnet
 
 rm -f 0525_parsed.db
 python3 -m purano.run_parse --inputs "data/20200525" --output-file 0525_parsed.db --fmt html --cleaner-config configs/cleaner.jsonnet
