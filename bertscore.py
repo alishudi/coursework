@@ -1,41 +1,33 @@
-from navec import Navec
-from string import punctuation
 import numpy as np
-import evaluate
+from evaluate import load
 import networkx as nx
 from tqdm import tqdm, trange
 
-navec = Navec.load('navec_hudlit_v1_12B_500K_300d_100q.tar')
-rouge = evaluate.load('rouge')
-
-def tokenize(text): 
-    words = [tok for tok in text.split(' ') if tok not in punctuation]
-    return ' '.join([str(navec.vocab.get(word, navec.vocab.unk_id)) for word in words])
+bertscore = load("bertscore")
 
 
-def calc_rouge_matrix(group, url2record, rouge_type='rouge1'):
+def calc_bertscore_matrix(group, url2record, model_type, metric_type='precision'):
     n = len(group)
     matrix = []
 
-    headlines = [tokenize(url2record[url]['patched_title']) for url in group]
-    texts = [tokenize(url2record[url]['patched_text']) for url in group]
+    headlines = [url2record[url]['patched_title'] for url in group]
+    texts = [url2record[url]['patched_text'] for url in group]
     
     for i in range(n):
-        matrix.append(rouge.compute(
+        matrix.append(bertscore.compute(
             predictions=headlines[i:i+1] * n,
             references=texts,
-            rouge_types=[rouge_type],
-            use_aggregator=False
-        )[rouge_type])
+            model_type=model_type
+        )[metric_type])
             
     return np.array(matrix)
 
-def evaluate_rouge(groups, markups, url2record, rouge_type='rouge1', threshold=0.01):
+def evaluate_bertscore(groups, markups, url2record, model_type, metric_type='precision', threshold=0.01):
     accs = []
 
     for i in trange(len(groups)):
         group = list(groups[i])
-        matrix = calc_rouge_matrix(group, url2record, rouge_type=rouge_type)
+        matrix = calc_bertscore_matrix(group, url2record, model_type,  metric_type=metric_type)
 
         nx_graph = nx.from_numpy_array(matrix, create_using=nx.DiGraph)
         scores = nx.pagerank(nx_graph)
