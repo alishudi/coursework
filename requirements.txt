@@ -4,3 +4,4 @@ navec
 networkx
 tqdm
 bert_score
+lexrank
