@@ -5,12 +5,13 @@ from tqdm import trange
 from lexrank_centrality import degree_centrality_scores
 
 
-def evaluate_metric(groups, markups, url2record, similiarity_metric, rank_method, dir=True, threshold=0.01):
+def evaluate_metric(groups, markups, url2record, similiarity_metric, rank_method, matrix_func=lambda x: x, dir=True, threshold=0.01):
     accs = []
 
     for i in trange(len(groups)):
         group = list(groups[i])
         matrix = similiarity_metric.calc_matrix(group, url2record)
+        matrix = matrix_func(matrix)
 
         if rank_method == 'pagerank':
             if dir:
