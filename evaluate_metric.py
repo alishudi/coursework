@@ -15,9 +15,9 @@ def evaluate_metric(groups, markups, url2record, similiarity_metric, rank_method
 
         if rank_method == 'pagerank':
             if dir:
-                nx_graph = nx.from_numpy_array(matrix, create_using=nx.DiGraph)
+                nx_graph = nx.from_numpy_array(matrix, max_iter=200, create_using=nx.DiGraph)
             else:
-                nx_graph = nx.from_numpy_array(matrix)
+                nx_graph = nx.from_numpy_array(matrix, max_iter=200)
             scores = nx.pagerank(nx_graph)
         elif rank_method == 'lexrank':
             scores = degree_centrality_scores(matrix, threshold=None)

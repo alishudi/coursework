@@ -3,5 +3,5 @@ rouge_score
 navec
 networkx
 tqdm
-bert_score
 lexrank
+string2string
