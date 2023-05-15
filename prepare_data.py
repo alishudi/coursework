@@ -80,11 +80,98 @@ def prepare_data(train=True):
         url2record = {r["url"]: r for r in train_records}
         groups, url2group, markups = get_groups(hl_train_markup)
     else:
+        train_records = parse_db("./data/0525_parsed.db")
+        test_0527_records = parse_db("./data/0527_parsed.db")
         test_0529_records = parse_db("./data/0529_parsed.db")
+        train_records.extend(test_0527_records).extend(test_0529_records)
 
+        hl_train_markup = read_markup_tsv("./data/titles_markup_0525_urls.tsv")
+        hl_public = read_markup_tsv("./data/titles_markup_0527_urls.tsv")
         hl_private = read_markup_tsv("./data/titles_markup_0529_urls.tsv")
+        hl_train_markup.extend(hl_public).extend(hl_private)
 
-        url2record = {r["url"]: r for r in test_0529_records}
-        groups, url2group, markups = get_groups(hl_private)
+        url2record = {r["url"]: r for r in train_records}
+        groups, url2group, markups = get_groups(hl_train_markup)
 
     return url2record, groups, url2group, markups
+
+
+class Node():
+    def __init__(self, url):
+        self.urls = set([url])
+        self.worse = set()
+        self.n_worse = 0
+        self.deleted = False
+        
+    def merge(self, other):
+        self.urls = self.urls | other.urls
+        self.worse = self.worse | other.worse
+        self.n_worse = len(self.worse)
+
+def opp(s):
+    if s == 'left':
+        return 'right'
+    return 'left'
+
+def find_best(group, markup):
+    url2node = {}
+
+    for url in group:
+        url2node[url] = Node(url)
+
+    for pair in markup:
+        qual = pair['quality']
+        if qual == 'draw':
+            url2node[pair['left_url']].merge(url2node[pair['right_url']])
+            url2node[pair['right_url']] = url2node[pair['left_url']]
+        else:
+            url2node[pair[qual + '_url']].worse.add(pair[opp(qual) + '_url'])
+            url2node[pair[qual + '_url']].n_worse += 1
+
+    all_urls = set(group)
+    for _ in range(100):
+        empty_nodes = set()
+        for url in url2node:
+            if url2node[url].deleted:
+                continue
+            elif len(url2node[url].worse) == 0:
+                url2node[url].deleted = True
+                empty_nodes = empty_nodes | url2node[url].urls
+                
+        for url in url2node: 
+            url2node[url].worse -= empty_nodes
+        
+        if len(all_urls) == len(empty_nodes):
+            best_nodes = set()
+            best = 0
+            for url in empty_nodes:
+                if url2node[url].n_worse > best:
+                    best_nodes = set()
+                    best_nodes = best_nodes | url2node[url].urls
+                    best = url2node[url].n_worse
+                elif url2node[url].n_worse == best and url not in best_nodes:
+                    best_nodes = best_nodes | url2node[url].urls
+            return best_nodes
+        else:
+            all_urls -= empty_nodes
+            
+    return 'bad' #some clusters have non transitive markups, will ignore them
+
+def prepare_comp_data(min_size=5):
+    url2record, groups, url2group, markups = prepare_data(train=False)
+    eval_groups, eval_markups = [], []
+
+    for i in range(len(groups)):
+        if len(groups[i]) >= min_size:
+            eval_groups.append(groups[i])
+            eval_markups.append(markups[i])
+
+    best_headlines = []
+    nont_clusters = []
+    for i in range(len(eval_groups)):
+        r = find_best(eval_groups[i], eval_markups[i])
+        if r == 'bad':
+            nont_clusters.append(i)
+        best_headlines.append(r)
+
+    return eval_groups, eval_markups, url2record, best_headlines, nont_clusters

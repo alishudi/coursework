@@ -28,11 +28,11 @@ def evaluate_metric(groups, markups, url2record, similiarity_metric, rank_method
         for j, url in enumerate(group):
             url2ind[url] = j
 
-        for markup in markups[i]:
-            qual = markup['quality']
+        for pair in markups[i]:
+            qual = pair['quality']
             assert qual in ['left', 'right', 'draw']
-            score_left = scores[url2ind[markup['left_url']]]
-            score_right = scores[url2ind[markup['right_url']]]
+            score_left = scores[url2ind[pair['left_url']]]
+            score_right = scores[url2ind[pair['right_url']]]
             if qual == 'left':
                 accs.append(int(score_left > score_right))
             elif qual == 'right':

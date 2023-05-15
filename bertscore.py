@@ -1,6 +1,7 @@
 import numpy as np
 from torch.cuda import is_available
 from string2string.similarity import BERTScore
+from model_lists import model_lists
 
 class Bertscore:
     def __init__(self, model_name, num_layers=None):
@@ -12,10 +13,10 @@ class Bertscore:
         self.metric_type = 'precision'
         
         #those models has wrong max sequence length assigned on HF
-        if model_name in ['ai-forever/ruBert-base', 'ai-forever/ruBert-large', 'ai-forever/ruRoberta-large']:
+        if model_name in model_lists['512']:
             self.bertscore.tokenizer.model_max_length = 512
 
-        if model_name in ['ai-forever/ruT5-base', 'ai-forever/ruT5-large', 'IlyaGusev/rut5_base_sum_gazeta']:
+        if model_name in model_lists['1024']:
             self.bertscore.tokenizer.model_max_length = 1024
 
     def set_metric_type(self, metric_type):
@@ -33,3 +34,11 @@ class Bertscore:
         matrix = self.bertscore.compute(headlines, texts)[self.metric_type].reshape(n, n)
                 
         return matrix
+
+    def get_scores(self, group, url2record, best_headline):
+        headlines = [url2record[url]['patched_title'] for url in group]
+        reference_headline = url2record[best_headline]['patched_title']
+
+        scores = self.bertscore.compute(headlines, [reference_headline] * len(headlines))
+
+        return scores[self.metric_type]

@@ -2,26 +2,33 @@ from torch.cuda import is_available
 from torch import no_grad
 from string2string.misc import ModelEmbeddings
 from string2string.similarity import CosineSimilarity
+from sentence_transformers import SentenceTransformer
+from model_lists import model_lists
 
 class Cosine_similiarity:
     def __init__(self, model_name):
-        self.emb_model = ModelEmbeddings(
-            model_name_or_path=model_name,
-            device='cuda' if is_available() else 'cpu'
-        )
+        self.is_sent = model_name in model_lists['sent']
+        if self.is_sent:
+            self.emb_model = SentenceTransformer(
+                model_name_or_path=model_name,
+                device='cuda' if is_available() else 'cpu'
+            )
+        else:
+            self.emb_model = ModelEmbeddings(
+                model_name_or_path=model_name,
+                device='cuda' if is_available() else 'cpu'
+            )
         self.emb_type = 'mean_pooling' #'last_hidden_state'
         self.cosine_similarity = CosineSimilarity()
 
         #those models has wrong max sequence length assigned on HF
-        if model_name in ['ai-forever/ruBert-base', 'ai-forever/ruBert-large', 'ai-forever/ruRoberta-large']:
+        if model_name in model_lists['512']:
             self.emb_model.tokenizer.model_max_length = 512
 
-        if model_name in ['ai-forever/ruT5-base', 'ai-forever/ruT5-large', 'IlyaGusev/rut5_base_sum_gazeta']:
+        if model_name in model_lists['1024']:
             self.emb_model.tokenizer.model_max_length = 1024
 
-        self.is_encdec = model_name in ['ai-forever/ruT5-base', 'ai-forever/ruT5-large', 'IlyaGusev/rut5_base_sum_gazeta',
-                                        'facebook/mbart-large-50', 'IlyaGusev/mbart_ru_sum_gazeta',
-                                        'Kirili4ik/mbart_ruDialogSum']
+        self.is_encdec = model_name in model_lists['enc_dec']
 
     def set_emb_type(self, emb_type):
         self.emb_type = emb_type
@@ -32,7 +39,10 @@ class Cosine_similiarity:
         headlines = [url2record[url]['patched_title'] for url in group]
         texts = [url2record[url]['patched_text'] for url in group]
         
-        if self.is_encdec:
+        if self.is_sent:
+            headline_embs = self.emb_model.encode(headlines, show_progress_bar=False, convert_to_tensor=True)
+            text_embs = self.emb_model.encode(texts, show_progress_bar=False, convert_to_tensor=True)
+        elif self.is_encdec:
             headline_embs = self.s_get_embeddings(headlines, embedding_type=self.emb_type)
             text_embs = self.s_get_embeddings(texts, embedding_type=self.emb_type)
         else:
