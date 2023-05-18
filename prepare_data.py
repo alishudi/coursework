@@ -83,12 +83,14 @@ def prepare_data(train=True):
         train_records = parse_db("./data/0525_parsed.db")
         test_0527_records = parse_db("./data/0527_parsed.db")
         test_0529_records = parse_db("./data/0529_parsed.db")
-        train_records.extend(test_0527_records).extend(test_0529_records)
+        train_records.extend(test_0527_records)
+        train_records.extend(test_0529_records)
 
         hl_train_markup = read_markup_tsv("./data/titles_markup_0525_urls.tsv")
         hl_public = read_markup_tsv("./data/titles_markup_0527_urls.tsv")
         hl_private = read_markup_tsv("./data/titles_markup_0529_urls.tsv")
-        hl_train_markup.extend(hl_public).extend(hl_private)
+        hl_train_markup.extend(hl_public)
+        hl_train_markup.extend(hl_private)
 
         url2record = {r["url"]: r for r in train_records}
         groups, url2group, markups = get_groups(hl_train_markup)

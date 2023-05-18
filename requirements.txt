@@ -6,3 +6,4 @@ tqdm
 lexrank
 string2string
 sentence-transformers
+sacrebleu

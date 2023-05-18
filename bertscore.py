@@ -4,13 +4,14 @@ from string2string.similarity import BERTScore
 from model_lists import model_lists
 
 class Bertscore:
-    def __init__(self, model_name, num_layers=None):
+    def __init__(self, model_name, num_layers=None, shuffle=False):
         self.bertscore = BERTScore(
             model_name_or_path=model_name,
             num_layers=num_layers,
             device='cuda' if is_available() else 'cpu'
             )
         self.metric_type = 'precision'
+        self.shuffle = shuffle
         
         #those models has wrong max sequence length assigned on HF
         if model_name in model_lists['512']:
@@ -27,6 +28,8 @@ class Bertscore:
 
         headlines = [url2record[url]['patched_title'] for url in group]
         texts = [url2record[url]['patched_text'] for url in group]
+        if self.shuffle:
+            np.random.shuffle(texts)
         
         headlines = np.array(headlines).repeat(n).tolist()
         texts = texts * n

@@ -24,7 +24,6 @@ class Rouge:
         
         headlines = np.array(headlines).repeat(n).tolist()
         texts = texts * n
-        
 
         matrix = self.rouge.compute(
             predictions=headlines,

@@ -9,6 +9,10 @@ class Bleu:
     def __init__(self, navec_model='navec_hudlit_v1_12B_500K_300d_100q.tar'):
         self.navec = Navec.load(navec_model)
         self.bleu = evaluate.load('bleu')
+        self.max_n = 1
+        
+    def set_max_n(self, max_n):
+        self.max_n = max_n
 
     def tokenize(self, text): 
         words = [tok for tok in text.split(' ') if tok not in punctuation]
@@ -17,7 +21,8 @@ class Bleu:
     def compute_bleu(self, headlines, texts, n, i):
             return self.bleu.compute(
                 predictions=[headlines[i // n]],
-                references=[texts[i % n]]
+                references=[texts[i % n]],
+                max_order=self.max_n
             )['bleu']
         
     def calc_matrix(self, group, url2record):
@@ -33,3 +38,16 @@ class Bleu:
         matrix = np.array(results).reshape(n, n)
         
         return matrix
+
+    def get_scores(self, group, url2record, best_headline):
+        headlines = [self.tokenize(url2record[url]['patched_title']) for url in group]
+        reference_headline = self.tokenize(url2record[best_headline]['patched_title'])
+
+        scores = []
+        for i in range(len(headlines)):
+            scores.append(self.bleu.compute(
+                predictions=headlines[i:i+1],
+                references=[reference_headline],
+                max_order=self.max_n
+            )['bleu'])
+        return scores
